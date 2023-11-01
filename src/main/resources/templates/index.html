@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>ES简单案例</title>
+  <!-- 引入 layui 的样式文件和 JS 文件 -->
+  <link rel="stylesheet" href="https://cdn.staticfile.org/layui/2.5.7/css/layui.min.css">
+  <script src="https://cdn.staticfile.org/layui/2.5.7/layui.min.js"></script>
+  <script src="https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js"></script>
+</head>
+<body>
+<div class="layui-container">
+  <!-- 新增弹窗 -->
+  <div id="object-form" style="display:none;">
+    <form class="layui-form">
+      <div class="layui-form-item">
+        <label class="layui-form-label">名称</label>
+        <div class="layui-input-block">
+          <input type="text" style="width: 350px" id="title" required  lay-verify="required" placeholder="请输入名称" autocomplete="off" class="layui-input">
+        </div>
+      </div>
+      <div class="layui-form-item">
+        <label class="layui-form-label">价格</label>
+        <div class="layui-input-block">
+          <input type="text" style="width: 350px" id="price" required  lay-verify="required" placeholder="请输入价格" autocomplete="off" class="layui-input">
+        </div>
+      </div>
+      <div class="layui-form-item">
+        <label class="layui-form-label">描述</label>
+        <div class="layui-input-block">
+          <textarea style="width: 350px" id="description" placeholder="请输入描述" class="layui-textarea"></textarea>
+        </div>
+      </div>
+    </form>
+  </div>
+  <!-- 新增弹窗 -->
+
+
+  <div class="layui-row">
+    <div class="layui-col-md12">
+      <div class="layui-card">
+        <div class="layui-card-header">商品列表</div>
+        <div class="layui-card-body">
+          <div class="layui-btn-group">
+            <button class="layui-btn" id="add-object">新增产品</button>
+            <button class="layui-btn layui-btn-sm layui-btn-danger" id="btnDelete">删除</button>
+          </div>
+          <form class="layui-form layui-form-pane" action="">
+            <div class="layui-form-item">
+              <div class="layui-inline">
+                <label class="layui-form-label">关键字查询</label>
+                <div class="layui-input-inline">
+                  <input type="text" name="keyword" autocomplete="off" class="layui-input">
+                </div>
+              </div>
+              <div class="layui-inline">
+                <label class="layui-form-label">价格大于</label>
+                <div class="layui-input-inline">
+                  <input type="text" name="min_price" autocomplete="off" class="layui-input">
+                </div>
+              </div>
+              <div class="layui-inline">
+                <label class="layui-form-label">价格小于</label>
+                <div class="layui-input-inline">
+                  <input type="text" name="max_price" autocomplete="off" class="layui-input">
+                </div>
+              </div>
+              <div class="layui-inline">
+                <button class="layui-btn" lay-submit lay-filter="formSearch">查询</button>
+              </div>
+              <input type="radio" name="search_type" value="0" title="默认" checked>
+              <div lay-radio>
+                <span style="color: blue;">from es</span>
+              </div>
+              <input type="radio" name="search_type" value="1" title="默认">
+              <div lay-radio>
+                <span style="color: pink;">from db</span>
+              </div>
+            </div>
+          </form>
+          <table class="layui-hide" id="userTable" lay-filter="userTable"></table>
+          <div class="layui-card-header">所有商品聚合信息</div>
+          <table class="layui-hide" id="userAggTable"></table>
+          <div id="userTablePage"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+  layui.use(['table', 'form', 'layer'], function() {
+    const table = layui.table;
+    const form = layui.form;
+    const layer = layui.layer;
+    // 渲染表格
+    table.render({
+      elem: '#userTable',
+      url: '/search_product',
+      method: 'get',
+      page: true,
+      limit: 10,
+      cols: [
+        [
+          {type: 'checkbox'},
+          {field: 'id', title: 'ID', width: 80},
+          {field: 'title', title: '产品名称', width: 150},
+          {field: 'price', title: '价格', width: 200},
+          {field: 'description', title: '描述', width: 430},
+          {field: 'createTime', title: '创建时间', width: 200},
+        ]
+      ],
+    });
+
+    // 渲染聚合
+    table.render({
+      elem: '#userAggTable',
+      url: '/aggregation',
+      method: 'get',
+      page: true,
+      limit: 10,
+      cols: [
+        [
+          {field: 'max', title: '最大值', width: 180},
+          {field: 'min', title: '最小值', width: 180},
+          {field: 'avg', title: '平均值', width: 180},
+          {field: 'sum', title: '求和', width: 180},
+          {field: 'count', title: '个数', width: 180}
+        ]
+      ]
+    });
+
+    // 监听表单提交事件
+    form.on('submit(formSearch)', function(data) {
+      // 重新加载表格数据
+      table.reload('userTable', {
+        where: {
+          keyword: data.field.keyword,
+          min_price: data.field.min_price,
+          max_price: data.field.max_price,
+          search_type: data.field.search_type
+        },
+        page: {
+          curr: 1
+        }
+      });
+      return false;
+    });
+    $('#add-object').on('click', function() {
+      layer.open({
+        type: 1,
+        title: '新增对象',
+        content: $('#object-form'),
+        area: ['500px', '300px'],
+        btn: ['保存', '取消'],
+        yes: function(index, layero) {
+          // 保存对象的逻辑
+          addProduct();
+          document.getElementById("title").value = "";
+          document.getElementById("price").value = "";
+          document.getElementById("description").value = "";
+          layer.close(index);
+        },
+        btn2: function(index, layero) {
+          // 取消的逻辑
+          document.getElementById("title").value = "";
+          document.getElementById("price").value = "";
+          document.getElementById("description").value = "";
+          layer.close(index);
+        }
+      });
+    });
+
+    // 监听删除按钮点击事件
+    $('#btnDelete').on('click', function() {
+      const checkStatus = table.checkStatus('userTable');
+      const data = checkStatus.data;
+      if(data.length === 0) {
+        layer.msg('请至少选择一项删除');
+        return;
+      }
+      layer.confirm('确定删除选中项？', function(index) {
+        // 执行删除逻辑
+        const ids = data.map(obj => obj.id);
+        console.log(ids)
+        // 执行删除逻辑
+        $.ajax({
+          url: '/del_product',
+          type: 'POST',
+          data: JSON.stringify(ids),
+          contentType: 'application/json',
+          success: function(res) {
+            if(res.code === 0) {
+              layer.msg('删除成功');
+              table.reload('userTable');
+            } else {
+              layer.msg('删除失败');
+            }
+          },
+          error: function() {
+            layer.msg('请求失败');
+          }
+        });
+        layer.close(index);
+      });
+    });
+  });
+
+  function addProduct() {
+    let data = {
+      "title": document.getElementById("title").value,
+      "price": document.getElementById("price").value,
+      "description": document.getElementById("description").value
+    }
+    let request = new XMLHttpRequest();
+    request.open("post", "/add_product", true);
+    request.setRequestHeader("Content-Type", "application/json")
+    request.send(JSON.stringify(data));
+    request.onload = function () {
+      if (this.status === 200) {
+        layer.msg("添加成功！")
+      } else {
+        layer.msg("添加失败！")
+      }
+    }
+    request.onerror = function () {
+      alert("请求失败！")
+    }
+  }
+
+
+</script>
+
+
+
+
+</body>
+</html>

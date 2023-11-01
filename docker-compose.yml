@@ -1,0 +1,71 @@
+version: '3'
+services:
+  es_demo:
+    # 容器名为es_demo
+    container_name: es_demo
+    # Dockerfile构建
+    build: .
+    ports:
+      - "8899:8899"
+    depends_on:
+      - elasticsearch
+      - mysql
+  mysql:
+    container_name: mysql
+    image: mysql:8.0.32
+    environment:
+      MYSQL_DATABASE: test-db
+      MYSQL_ROOT_PASSWORD: 12345678
+      MYSQL_ROOT_HOST: '%'
+    volumes:
+      - ~/dockerData/mysql/conf:/etc/mysql/conf.d
+      - ~/dockerData/mysql/logs:/logs
+      - ~/dockerData/mysql/data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    restart: always
+  redis:
+    container_name: redis
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    restart: always
+  elasticsearch:
+    container_name: elasticsearch
+    image: elasticsearch:7.14.0
+    networks:
+      - es-net
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - ~/dockerData/es/data:/usr/share/elasticsearch/data
+  kibana:
+    container_name: kibana
+    image: kibana:7.14.0
+    networks:
+      - es-net
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - 5601:5601
+    depends_on:
+      - elasticsearch
+  rabbitmq:
+    container_name: rabbitmq
+    image: rabbitmq:3.8-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_VHOST=myvhost
+      - RABBITMQ_DEFAULT_USER=myuser
+      - RABBITMQ_DEFAULT_PASS=mypassword
+    restart: always
+networks:
+  es-net:
+
+
+

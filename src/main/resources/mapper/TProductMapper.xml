@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chendi.elasticsearch.demo.resources.TProductMapper">
+
+    <resultMap id="BaseResultMap" type="com.chendi.elasticsearch.demo.entity.mybatis.TProduct">
+            <id property="id" column="id" jdbcType="INTEGER"/>
+            <result property="create_time" column="create_time" jdbcType="TIMESTAMP"/>
+            <result property="description" column="description" jdbcType="VARCHAR"/>
+            <result property="price" column="price" jdbcType="DOUBLE"/>
+            <result property="title" column="title" jdbcType="VARCHAR"/>
+            <result property="update_time" column="update_time" jdbcType="TIMESTAMP"/>
+            <result property="sharding_id" column="sharding_id" jdbcType="BIGINT" typeHandler="org.apache.ibatis.type.LongTypeHandler"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,create_time,description,
+        price,title,update_time,
+        sharding_id
+    </sql>
+</mapper>
